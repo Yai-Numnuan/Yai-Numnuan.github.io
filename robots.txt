@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /$
+Allow: /index.html
+Allow: /courses/
+Allow: /img/
+Allow: /assets/
+Allow: /sitemap.xml
+Allow: /google
+Disallow: /
+
+Sitemap: https://yai-numnuan.github.io/sitemap.xml
