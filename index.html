@@ -544,7 +544,7 @@ function heroHTML(){
       (p.bio ? '<p class="hero-bio">' + bioHTML(p.bio) + '</p>' : '') +
       '<div class="hero-cta">' +
         (p.phone ? '<a class="cta primary" href="tel:' + esc(tel) + '">' + ico('phone') + '<span class="mono">' + esc(p.phone) + '</span></a>' : '') +
-        (p.line ? '<a class="cta" href="https://line.me/ti/p/~' + encodeURIComponent(p.line) + '" target="_blank" rel="noopener">' + ico('chat') + 'LINE</a>' : '') +
+        (p.line ? '<a class="cta" href="' + esc(lineHref(p)) + '" target="_blank" rel="noopener">' + ico('chat') + 'LINE</a>' : '') +
         '<button class="cta" data-go="contact">' + ico('mail') + 'ช่องทางติดต่อ</button>' +
       '</div></div>' +
     '<div class="plate" role="group" aria-label="ข้อมูลรับรองวิทยากร"><span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>' +
@@ -666,11 +666,12 @@ function credHTML(){
     (T.length > LIM ? '<div class="more-btn" style="justify-content:flex-start;margin-top:10px"><button class="btn-line" data-a="train-toggle">' + (ui.trainAll ? 'ย่อรายการ ' + ico('up') : 'แสดงทั้งหมด ' + T.length + ' หลักสูตร ' + ico('down')) + '</button></div>' : '') + '</div>' : '';
   return '<section class="sec wrap" id="credentials"><div class="sec-head"><p class="eyebrow">Qualifications</p><h2>คุณวุฒิและการฝึกอบรม</h2></div><div class="cred"><div>' + left + '</div><div id="train-body">' + right + '</div></div></section>';
 }
+function lineHref(p){ var u = String(p.lineUrl || '').trim(); return /^https:\/\/(line\.me|lin\.ee)\//.test(u) ? u : 'https://line.me/ti/p/~' + encodeURIComponent(p.line); }
 function contactHTML(){
   var p = state.profile, tel = String(p.phone || '').replace(/[^\d+]/g, ''), y = nowBE();
   var cards = '';
   if (p.phone) cards += '<div class="ccard"><span class="k">โทรศัพท์</span><span class="v">' + esc(p.phone) + '</span><div class="acts"><a class="ibtn" href="tel:' + esc(tel) + '">' + ico('phone') + 'โทร</a><button class="ibtn" data-copy="' + esc(p.phone) + '">' + ico('copy') + 'คัดลอก</button></div></div>';
-  if (p.line) cards += '<div class="ccard"><span class="k">LINE ID</span><span class="v">' + esc(p.line) + '</span><div class="acts"><a class="ibtn" href="https://line.me/ti/p/~' + encodeURIComponent(p.line) + '" target="_blank" rel="noopener">' + ico('chat') + 'เพิ่มเพื่อน</a><button class="ibtn" data-copy="' + esc(p.line) + '">' + ico('copy') + 'คัดลอก</button></div></div>';
+  if (p.line) cards += '<div class="ccard"><span class="k">LINE ID</span><span class="v">' + esc(p.line) + '</span><div class="acts"><a class="ibtn" href="' + esc(lineHref(p)) + '" target="_blank" rel="noopener">' + ico('chat') + 'เพิ่มเพื่อน</a><button class="ibtn" data-copy="' + esc(p.line) + '">' + ico('copy') + 'คัดลอก</button></div></div>';
   [p.email, p.email2].filter(Boolean).forEach(function(m){ cards += '<div class="ccard mail"><span class="k">อีเมล</span><span class="v sm">' + esc(m) + '</span><div class="acts"><a class="ibtn" href="mailto:' + esc(m) + '">' + ico('mail') + 'ส่งอีเมล</a><button class="ibtn" data-copy="' + esc(m) + '">' + ico('copy') + 'คัดลอก</button></div></div>'; });
   var upd = state.updatedAt ? thaiDate(state.updatedAt) : '';
   return '<footer class="contact" id="contact"><div class="sec wrap"><div class="sec-head"><p class="eyebrow">Contact</p><h2>ติดต่อสอบถาม</h2></div><div class="cards">' + cards + '</div>' +
@@ -808,6 +809,7 @@ var PROFILE_FIELDS = [
   {k:'elecSince', label:'เริ่มงานด้านไฟฟ้ากับ กฟภ. ปี พ.ศ.', num:true},
   {k:'phone', label:'โทรศัพท์'},
   {k:'line', label:'LINE ID'},
+  {k:'lineUrl', label:'ลิงก์เพิ่มเพื่อน LINE (ถ้ามี)', ph:'https://line.me/ti/p/...', hint:'ในแอป LINE: เพิ่มเพื่อน → คิวอาร์โค้ด → คัดลอกลิงก์ แล้ววางที่นี่ ปุ่ม "เพิ่มเพื่อน" จะใช้ลิงก์นี้ (ถ้าเว้นว่าง จะใช้ LINE ID ซึ่งต้องเปิด "อนุญาตให้ผู้อื่นเพิ่มเพื่อนด้วยไอดี" ในแอป LINE)'},
   {k:'email', label:'อีเมล 1'},
   {k:'email2', label:'อีเมล 2'},
   {k:'area', label:'พื้นที่ให้บริการ', full:true}
