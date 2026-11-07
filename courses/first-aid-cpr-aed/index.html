@@ -8,7 +8,7 @@
   --plate-hi:#f2f3f0; --plate-lo:#c3c8c3; --plate-text:#1c222a; --plate-line:#959c96;
   --danger:#b42318; --on-danger:#ffffff; --ok:#1d7a4b; --pin:#d6352b;
   --cat-pea:#e09d00; --cat-elec:#2f6fd6; --cat-cpr:#d1443c; --cat-height:#14968a; --cat-osh:#5b8c2c; --cat-other:#7b8594;
-  --scrim:rgba(6,11,19,.94);
+  --scrim:rgba(6,11,19,.985);
   --shadow:0 1px 2px rgba(15,27,45,.05),0 8px 24px rgba(15,27,45,.07);
   --font-display:"Chakra Petch","Anuphan","Noto Sans Thai",system-ui,sans-serif;
   --font-body:"Anuphan","Noto Sans Thai","Leelawadee UI",system-ui,sans-serif;
@@ -28,7 +28,7 @@
     --plate-hi:#dcdfda; --plate-lo:#aab0aa; --plate-text:#1a1f26; --plate-line:#858c86;
     --danger:#f47a70; --on-danger:#1a0503; --ok:#4cc38a; --pin:#f4675d;
     --cat-pea:#f2b01e; --cat-elec:#6b9cf0; --cat-cpr:#f07068; --cat-height:#3cc2b4; --cat-osh:#8fc35a; --cat-other:#9aa6b7;
-    --scrim:rgba(2,5,10,.95);
+    --scrim:rgba(2,5,10,.985);
     --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.28);
     color-scheme:dark;
   }
@@ -42,7 +42,7 @@
   --plate-hi:#dcdfda; --plate-lo:#aab0aa; --plate-text:#1a1f26; --plate-line:#858c86;
   --danger:#f47a70; --on-danger:#1a0503; --ok:#4cc38a; --pin:#f4675d;
   --cat-pea:#f2b01e; --cat-elec:#6b9cf0; --cat-cpr:#f07068; --cat-height:#3cc2b4; --cat-osh:#8fc35a; --cat-other:#9aa6b7;
-  --scrim:rgba(2,5,10,.95);
+  --scrim:rgba(2,5,10,.985);
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 28px rgba(0,0,0,.28);
   color-scheme:dark;
 }
@@ -273,11 +273,14 @@ img{display:block}
 /* lightbox */
 .lb{position:fixed;inset:0;z-index:60;background:var(--scrim);color:var(--on-ink);display:grid;grid-template-rows:auto minmax(0,1fr) auto;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px)}
 .lb-top{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;font:500 13px var(--font-mono);color:var(--on-ink-muted)}
-.lb-stage{position:relative;display:grid;place-items:center;padding:0 8px;min-height:0}
-.lb-stage img{max-width:100%;max-height:100%;object-fit:contain;border-radius:4px}
-.lb-cap{padding:12px 16px 18px;text-align:center;font-size:14.5px;line-height:1.5;max-width:760px;margin-inline:auto}
-.lb-cap b{display:block;font:600 16px/1.4 var(--font-display);color:var(--on-ink)}
-.lb-cap span{color:var(--on-ink-muted)}
+.lb-stage{position:relative;min-height:0;overflow:hidden}
+/* every photo fills the same frame (scaled up or down), so all appear the same size and the caption below never gets pushed off-screen */
+.lb-stage img{position:absolute;top:6px;bottom:6px;left:8px;right:8px;width:calc(100% - 16px);height:calc(100% - 12px);max-width:none;max-height:none;object-fit:contain}
+@media (min-width:760px){.lb-stage img{left:76px;right:76px;width:calc(100% - 152px)}}
+.lb-prev,.lb-next{z-index:1}
+.lb-cap{padding:10px 16px 18px;text-align:center;font-size:15px;line-height:1.5;max-width:820px;margin-inline:auto;min-height:124px}
+.lb-cap b{display:block;font:600 17px/1.4 var(--font-display);color:var(--on-ink)}
+.lb-cap span{display:block;color:var(--on-ink-muted);margin-top:2px}
 .lb-btn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:var(--on-ink);cursor:pointer}
 .lb-btn:hover{background:rgba(255,255,255,.14)}
 .lb-prev,.lb-next{position:absolute;top:50%;transform:translateY(-50%)}
