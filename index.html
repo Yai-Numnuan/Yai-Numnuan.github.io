@@ -1483,13 +1483,14 @@ if (STATIC) {
     try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
   }
   if (!location.hash) (function(){
-    /* Keeps watching until 4 s after the page has fully loaded (a refresh can load slowly, and the Google app
-       jumps only after that), checking on scroll and every quarter second; at most 20 s in total. */
-    var photo = document.querySelector('.hero-photo'), done = false, n = 0, t0 = Date.now(), end = 0, timer;
+    /* Keeps watching until 5 s after the page has fully loaded. The Google app moves the page with its own
+       animation (seen after pull-to-refresh: it glides down to 60 px), so pulling back during that animation is
+       useless; instead wait until the page has been still for a moment, then put it back at the top once. */
+    var photo = document.querySelector('.hero-photo'), done = false, n = 0, t0 = Date.now(), end = 0, timer, settle, lastMove = 0;
     var stop = function(e){ if (!done) dlog('stop:' + e.type); done = true; };
     ['touchstart', 'wheel', 'keydown', 'mousedown'].forEach(function(t){ window.addEventListener(t, stop, {passive:true, capture:true}); });
-    var back = function(){
-      if (done || !photo || n > 8) return;
+    var check = function(){
+      if (done || !photo || n > 5) return;
       var y = window.pageYOffset || 0, limit = photo.getBoundingClientRect().bottom + y;
       if (y > 0 && y < limit) {
         n++; dlog('reset ' + Math.round(y));
@@ -1498,17 +1499,18 @@ if (STATIC) {
         setTimeout(function(){ h.style.scrollBehavior = ''; }, 60);
       }
     };
-    var loaded = function(e){ dlog((e && e.type) || 'load'); end = Date.now() + 4000; back(); };
+    var moved = function(){ lastMove = Date.now(); clearTimeout(settle); settle = setTimeout(check, 220); };
+    var loaded = function(e){ dlog((e && e.type) || 'load'); end = Date.now() + 5000; moved(); };
     var tick = function(){
       var now = Date.now();
-      if (done || now - t0 > 20000 || (end && now > end)) { clearInterval(timer); window.removeEventListener('scroll', back); return; }
-      back();
+      if (done || now - t0 > 25000 || (end && now > end)) { clearInterval(timer); window.removeEventListener('scroll', moved); return; }
+      if (now - lastMove > 220) check();
     };
-    window.addEventListener('scroll', back, {passive:true});
+    window.addEventListener('scroll', moved, {passive:true});
     if (document.readyState === 'complete') loaded(); else window.addEventListener('load', loaded);
     window.addEventListener('pageshow', loaded);
     timer = setInterval(tick, 250);
-    back();
+    check();
   })();
   if (diag) (function(){
     var box = document.createElement('div');
