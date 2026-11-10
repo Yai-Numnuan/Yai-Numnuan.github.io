@@ -1466,6 +1466,28 @@ function initCaps(){
 
 if (STATIC) {
   fitPlate();
+  /* Opening from a Google result (notably the Google app) can jump the page down to the searched words
+     without allowing for the sticky menu bar, leaving the photo half hidden. If such a jump lands where the
+     photo would be covered, put the page back at the very top. Stops as soon as the visitor touches or scrolls. */
+  if (!location.hash) (function(){
+    var photo = document.querySelector('.hero-photo'), done = false, n = 0;
+    var stop = function(){ done = true; };
+    ['touchstart', 'wheel', 'keydown', 'mousedown'].forEach(function(t){ window.addEventListener(t, stop, {passive:true, capture:true}); });
+    var back = function(){
+      if (done || !photo || n > 6) return;
+      var y = window.pageYOffset || 0, limit = photo.getBoundingClientRect().bottom + y;
+      if (y > 0 && y < limit) {
+        n++;
+        var h = document.documentElement; h.style.scrollBehavior = 'auto';
+        try { window.scrollTo({top:0, left:0, behavior:'instant'}); } catch (e) { window.scrollTo(0, 0); }
+        setTimeout(function(){ h.style.scrollBehavior = ''; }, 60);
+      }
+    };
+    window.addEventListener('scroll', back, {passive:true});
+    window.addEventListener('load', back); window.addEventListener('pageshow', back);
+    setTimeout(function(){ done = true; window.removeEventListener('scroll', back); }, 4000);
+    back();
+  })();
   var hs = location.hash.slice(1);
   if (hs && state.courses.some(function(c){ return slugFor(c) === hs; })) {
     try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
