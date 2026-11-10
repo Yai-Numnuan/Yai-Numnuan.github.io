@@ -1470,11 +1470,13 @@ if (STATIC) {
      without allowing for the sticky menu bar, leaving the photo half hidden. If such a jump lands where the
      photo would be covered, put the page back at the very top. Stops as soon as the visitor touches or scrolls. */
   if (!location.hash) (function(){
-    var photo = document.querySelector('.hero-photo'), done = false, n = 0;
+    /* Keeps watching until 4 s after the page has fully loaded (a refresh can load slowly, and the Google app
+       jumps only after that), checking on scroll and every quarter second; at most 20 s in total. */
+    var photo = document.querySelector('.hero-photo'), done = false, n = 0, t0 = Date.now(), end = 0, timer;
     var stop = function(){ done = true; };
     ['touchstart', 'wheel', 'keydown', 'mousedown'].forEach(function(t){ window.addEventListener(t, stop, {passive:true, capture:true}); });
     var back = function(){
-      if (done || !photo || n > 6) return;
+      if (done || !photo || n > 8) return;
       var y = window.pageYOffset || 0, limit = photo.getBoundingClientRect().bottom + y;
       if (y > 0 && y < limit) {
         n++;
@@ -1483,9 +1485,16 @@ if (STATIC) {
         setTimeout(function(){ h.style.scrollBehavior = ''; }, 60);
       }
     };
+    var loaded = function(){ end = Date.now() + 4000; back(); };
+    var tick = function(){
+      var now = Date.now();
+      if (done || now - t0 > 20000 || (end && now > end)) { clearInterval(timer); window.removeEventListener('scroll', back); return; }
+      back();
+    };
     window.addEventListener('scroll', back, {passive:true});
-    window.addEventListener('load', back); window.addEventListener('pageshow', back);
-    setTimeout(function(){ done = true; window.removeEventListener('scroll', back); }, 4000);
+    if (document.readyState === 'complete') loaded(); else window.addEventListener('load', loaded);
+    window.addEventListener('pageshow', loaded);
+    timer = setInterval(tick, 250);
     back();
   })();
   var hs = location.hash.slice(1);
