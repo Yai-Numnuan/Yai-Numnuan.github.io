@@ -1469,23 +1469,36 @@ if (STATIC) {
   /* Opening from a Google result (notably the Google app) can jump the page down to the searched words
      without allowing for the sticky menu bar, leaving the photo half hidden. If such a jump lands where the
      photo would be covered, put the page back at the very top. Stops as soon as the visitor touches or scrolls. */
+  /* Check mode (only on a phone where it was switched on with ?diag=1, off again with ?diag=0): a small box at the
+     bottom-left shows the real scroll numbers inside the Google app, so a layout problem there can be measured. */
+  var diag = null;
+  try {
+    var dq = /[?&]diag=(\d)/.exec(location.search);
+    if (dq) localStorage.setItem('pf-diag', dq[1]);
+    if (localStorage.getItem('pf-diag') === '1') diag = {log:[], t0:Date.now()};
+  } catch (e) {}
+  var dlog = function(m){ if (diag) { diag.log.push(m + '@' + (Date.now() - diag.t0)); if (diag.log.length > 14) diag.log.shift(); } };
+  if (!location.hash) {
+    /* a refresh should start from the top, not from a remembered position */
+    try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
+  }
   if (!location.hash) (function(){
     /* Keeps watching until 4 s after the page has fully loaded (a refresh can load slowly, and the Google app
        jumps only after that), checking on scroll and every quarter second; at most 20 s in total. */
     var photo = document.querySelector('.hero-photo'), done = false, n = 0, t0 = Date.now(), end = 0, timer;
-    var stop = function(){ done = true; };
+    var stop = function(e){ if (!done) dlog('stop:' + e.type); done = true; };
     ['touchstart', 'wheel', 'keydown', 'mousedown'].forEach(function(t){ window.addEventListener(t, stop, {passive:true, capture:true}); });
     var back = function(){
       if (done || !photo || n > 8) return;
       var y = window.pageYOffset || 0, limit = photo.getBoundingClientRect().bottom + y;
       if (y > 0 && y < limit) {
-        n++;
+        n++; dlog('reset ' + Math.round(y));
         var h = document.documentElement; h.style.scrollBehavior = 'auto';
         try { window.scrollTo({top:0, left:0, behavior:'instant'}); } catch (e) { window.scrollTo(0, 0); }
         setTimeout(function(){ h.style.scrollBehavior = ''; }, 60);
       }
     };
-    var loaded = function(){ end = Date.now() + 4000; back(); };
+    var loaded = function(e){ dlog((e && e.type) || 'load'); end = Date.now() + 4000; back(); };
     var tick = function(){
       var now = Date.now();
       if (done || now - t0 > 20000 || (end && now > end)) { clearInterval(timer); window.removeEventListener('scroll', back); return; }
@@ -1496,6 +1509,26 @@ if (STATIC) {
     window.addEventListener('pageshow', loaded);
     timer = setInterval(tick, 250);
     back();
+  })();
+  if (diag) (function(){
+    var box = document.createElement('div');
+    box.style.cssText = 'position:fixed;left:6px;bottom:calc(6px + env(safe-area-inset-bottom,0px));z-index:9999;max-width:72vw;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.82);color:#7CFC9A;font:11px/1.35 ui-monospace,Menlo,monospace;pointer-events:none;white-space:pre-wrap';
+    var probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden';
+    document.body.appendChild(box); document.body.appendChild(probe);
+    var nav = document.querySelector('.nav'), ph = document.querySelector('.hero-photo'), last = -1;
+    var nt = ''; try { nt = performance.getEntriesByType('navigation')[0].type; } catch (e) {}
+    var ref = ''; try { ref = document.referrer ? new URL(document.referrer).host : '-'; } catch (e) { ref = '?'; }
+    var draw = function(){
+      var vv = window.visualViewport, r = function(v){ return Math.round(v * 10) / 10; };
+      box.textContent = 'CHECK MODE  nav:' + nt + ' ref:' + ref +
+        '\nscrollY ' + r(window.pageYOffset) + '  vv.pageTop ' + (vv ? r(vv.pageTop) : '-') + '  vv.offTop ' + (vv ? r(vv.offsetTop) : '-') +
+        '\ninnerH ' + window.innerHeight + '  clientH ' + document.documentElement.clientHeight + '  vvH ' + (vv ? r(vv.height) : '-') + '  safeTop ' + parseFloat(getComputedStyle(probe).paddingTop) +
+        '\nnav ' + r(nav.getBoundingClientRect().top) + '..' + r(nav.getBoundingClientRect().bottom) + '  photo.top ' + r(ph.getBoundingClientRect().top) +
+        '\n' + diag.log.join(' ');
+    };
+    window.addEventListener('scroll', function(){ var y = Math.round(window.pageYOffset); if (y !== last) { last = y; dlog('s' + y); } draw(); }, {passive:true});
+    ['touchstart', 'touchend'].forEach(function(t){ window.addEventListener(t, function(){ dlog(t === 'touchstart' ? 'T+' : 'T-'); draw(); }, {passive:true}); });
+    setInterval(draw, 250); draw();
   })();
   var hs = location.hash.slice(1);
   if (hs && state.courses.some(function(c){ return slugFor(c) === hs; })) {
