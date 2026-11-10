@@ -1477,7 +1477,7 @@ if (STATIC) {
     if (dq) localStorage.setItem('pf-diag', dq[1]);
     if (localStorage.getItem('pf-diag') === '1') diag = {log:[], t0:Date.now()};
   } catch (e) {}
-  var dlog = function(m){ if (diag) { diag.log.push(m + '@' + (Date.now() - diag.t0)); if (diag.log.length > 14) diag.log.shift(); } };
+  var dlog = function(m){ if (diag) { diag.log.push(m + '@' + (Date.now() - diag.t0)); if (diag.log.length > 48) diag.log.shift(); } };
   if (!location.hash) {
     /* a refresh should start from the top, not from a remembered position */
     try { if ('scrollRestoration' in history) history.scrollRestoration = 'manual'; } catch (e) {}
@@ -1486,11 +1486,12 @@ if (STATIC) {
     /* Keeps watching until 5 s after the page has fully loaded. The Google app moves the page with its own
        animation (seen after pull-to-refresh: it glides down to 60 px), so pulling back during that animation is
        useless; instead wait until the page has been still for a moment, then put it back at the top once. */
-    var photo = document.querySelector('.hero-photo'), done = false, n = 0, t0 = Date.now(), end = 0, timer, settle, lastMove = 0;
+    var photo = document.querySelector('.hero-photo'), done = false, n = 0, t0 = Date.now(), end = 0, timer, settle, lastMove = 0, off = '';
     var stop = function(e){ if (!done) dlog('stop:' + e.type); done = true; };
+    if (diag) diag.state = function(){ return 'n' + n + (done ? ' DONE' : '') + (off ? ' OFF:' + off : '') + (end ? ' end-in ' + Math.round((end - Date.now()) / 100) / 10 + 's' : ' end:-'); };
     ['touchstart', 'wheel', 'keydown', 'mousedown'].forEach(function(t){ window.addEventListener(t, stop, {passive:true, capture:true}); });
     var check = function(){
-      if (done || !photo || n > 5) return;
+      if (done || !photo || n > 12) { if (n > 12 && !off) { off = 'max'; dlog('max'); } return; }
       var y = window.pageYOffset || 0, limit = photo.getBoundingClientRect().bottom + y;
       if (y > 0 && y < limit) {
         n++; dlog('reset ' + Math.round(y));
@@ -1500,10 +1501,10 @@ if (STATIC) {
       }
     };
     var moved = function(){ lastMove = Date.now(); clearTimeout(settle); settle = setTimeout(check, 220); };
-    var loaded = function(e){ dlog((e && e.type) || 'load'); end = Date.now() + 5000; moved(); };
+    var loaded = function(e){ dlog((e && e.type) || 'load'); end = Date.now() + 8000; moved(); };
     var tick = function(){
       var now = Date.now();
-      if (done || now - t0 > 25000 || (end && now > end)) { clearInterval(timer); window.removeEventListener('scroll', moved); return; }
+      if (done || now - t0 > 30000 || (end && now > end)) { off = off || (done ? 'touch' : 'time'); dlog('off:' + off); clearInterval(timer); window.removeEventListener('scroll', moved); return; }
       if (now - lastMove > 220) check();
     };
     window.addEventListener('scroll', moved, {passive:true});
@@ -1514,7 +1515,7 @@ if (STATIC) {
   })();
   if (diag) (function(){
     var box = document.createElement('div');
-    box.style.cssText = 'position:fixed;left:6px;bottom:calc(6px + env(safe-area-inset-bottom,0px));z-index:9999;max-width:72vw;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.82);color:#7CFC9A;font:11px/1.35 ui-monospace,Menlo,monospace;pointer-events:none;white-space:pre-wrap';
+    box.style.cssText = 'position:fixed;left:6px;bottom:calc(6px + env(safe-area-inset-bottom,0px));z-index:9999;max-width:72vw;padding:6px 8px;border-radius:6px;background:rgba(0,0,0,.82);color:#7CFC9A;font:10px/1.3 ui-monospace,Menlo,monospace;pointer-events:none;white-space:pre-wrap';
     var probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden';
     document.body.appendChild(box); document.body.appendChild(probe);
     var nav = document.querySelector('.nav'), ph = document.querySelector('.hero-photo'), last = -1;
@@ -1525,11 +1526,12 @@ if (STATIC) {
       box.textContent = 'CHECK MODE  nav:' + nt + ' ref:' + ref +
         '\nscrollY ' + r(window.pageYOffset) + '  vv.pageTop ' + (vv ? r(vv.pageTop) : '-') + '  vv.offTop ' + (vv ? r(vv.offsetTop) : '-') +
         '\ninnerH ' + window.innerHeight + '  clientH ' + document.documentElement.clientHeight + '  vvH ' + (vv ? r(vv.height) : '-') + '  safeTop ' + parseFloat(getComputedStyle(probe).paddingTop) +
-        '\nnav ' + r(nav.getBoundingClientRect().top) + '..' + r(nav.getBoundingClientRect().bottom) + '  photo.top ' + r(ph.getBoundingClientRect().top) +
+        '\nnav ' + r(nav.getBoundingClientRect().top) + '..' + r(nav.getBoundingClientRect().bottom) + '  photo.top ' + r(ph.getBoundingClientRect().top) + '  t ' + (Date.now() - diag.t0) +
+        '\nguard: ' + (diag.state ? diag.state() : '-') +
         '\n' + diag.log.join(' ');
     };
     window.addEventListener('scroll', function(){ var y = Math.round(window.pageYOffset); if (y !== last) { last = y; dlog('s' + y); } draw(); }, {passive:true});
-    ['touchstart', 'touchend'].forEach(function(t){ window.addEventListener(t, function(){ dlog(t === 'touchstart' ? 'T+' : 'T-'); draw(); }, {passive:true}); });
+    ['touchstart', 'touchend', 'touchcancel'].forEach(function(t){ window.addEventListener(t, function(){ dlog(t === 'touchstart' ? 'T+' : t === 'touchend' ? 'T-' : 'Tx'); draw(); }, {passive:true, capture:true}); });
     setInterval(draw, 250); draw();
   })();
   var hs = location.hash.slice(1);
