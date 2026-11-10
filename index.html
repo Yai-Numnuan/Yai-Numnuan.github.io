@@ -1502,7 +1502,14 @@ if (STATIC) {
     var check = function(){
       if (done || !photo || n > 12) return;
       var y = window.pageYOffset || 0, limit = photo.getBoundingClientRect().bottom + y;
-      if (y > 0 && y < limit) { n++; lastReset = Date.now(); resetFrom = y; jumpTo(0); }
+      if (y > 0 && y < limit) {
+        /* found again at the same spot it was pulled back from = the browser keeps pushing it there */
+        if (n && y <= 150 && Math.abs(y - resetFrom) <= 3 && ++bounces >= 2) { pad(Math.round(y)); return; }
+        n++; lastReset = Date.now(); resetFrom = y; jumpTo(0);
+        /* look again shortly without waiting for a scroll event: on the phone the push-back can happen with no
+           scroll event reaching the page */
+        setTimeout(check, 80);
+      }
     };
     var moved = function(){
       lastMove = Date.now(); clearTimeout(settle);
